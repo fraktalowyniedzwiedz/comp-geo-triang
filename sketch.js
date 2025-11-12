@@ -17,7 +17,7 @@ class Edge {
     this.wings = [];
   }
 }
-class Face {
+class Face {efwraewfr    ew
   constructor(vCycle) {
     this.verts = vCycle;
   } // Vertex objects
