@@ -5,10 +5,443 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <link href="/css/screen.css" rel="stylesheet" />
-    <title>P5.js Sketch</title>
+    <title>3-Colored Triangulation with P5.js Visualization</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+      }
+      h1, h2, h3 {
+        color: #2c3e50;
+      }
+      h1 {
+        text-align: center;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+      }
+      h2 {
+        border-left: 4px solid #3498db;
+        padding-left: 10px;
+        margin-top: 40px;
+      }
+      .math {
+        font-family: 'Times New Roman', serif;
+        font-style: italic;
+      }
+      .highlight {
+        background-color: #e8f4fc;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        border-left: 4px solid #3498db;
+      }
+      .algorithm {
+        background-color: #f0f7fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        border: 1px solid #d1e3f1;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #3498db;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      .conclusion {
+        background-color: #e8f6f3;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 30px 0;
+        border-left: 4px solid #2ecc71;
+      }
+      #sketch-container {
+        width: 100%;
+        text-align: center;
+        margin: 30px 0;
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .content-section {
+        background-color: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+      }
+    </style>
   </head>
   <body>
+    <h1>3-Colored Triangulation</h1>
+
+    <div class="content-section">
+      <h2>Introduction</h2>
+      <p>
+        Triangulations form the backbone of computational geometry and mesh processing. They break down arbitrary surfaces into simpler building blocks—triangles—over which computations such as interpolation, rendering, and finite element analysis can be performed.
+      </p>
+      <p>
+        However, not all triangulations are equally convenient to manipulate. A particularly elegant subclass are <strong>3-vertex-colorable triangulations</strong>, where each vertex can be assigned one of three colors so that no two adjacent vertices share the same color. Such triangulations admit efficient data structures, most notably the <strong>GEM (Graph-Encoded Manifold)</strong> representation of Montagner and Stolfi, which makes traversal and updates simple.
+      </p>
+      <p>
+        The problem, then, is:
+      </p>
+      <div class="highlight">
+        <p><strong>Given an arbitrary map on a surface, can we generate a triangulation that is 3-vertex-colorable?</strong></p>
+      </div>
+      <p>
+        The classical answer is to apply a barycentric subdivision, which always yields a 3-colorable triangulation. Yet, this method explodes the number of triangles, creating <span class="math">4e − 2b</span> of them for a map with <span class="math">e</span> edges and <span class="math">b</span> border edges.
+      </p>
+      <p>
+        The algorithm proposed by Bueno and Stolfi (2014) achieves the same goal much more efficiently, producing at most:
+      </p>
+      <div class="highlight">
+        <p class="math">2e − b + 2(2 − χ)</p>
+      </div>
+      <p>
+        triangles, where <span class="math">χ</span> is the Euler characteristic of the surface. In the special case when all faces have the same degree <span class="math">D</span>, this reduces to:
+      </p>
+      <div class="highlight">
+        <p class="math">(D − 1)n − b + 4(2 − χ)</p>
+      </div>
+      <p>
+        with <span class="math">n</span> the number of faces.
+      </p>
+    </div>
+
+    <!-- P5.js Sketch Container -->
+    <div id="sketch-container">
+      <h3>3-Colored Triangulation Visualization</h3>
+      <p>This interactive visualization demonstrates the 3-coloring principle on a triangulated surface.</p>
+      <!-- The p5.js sketch will be drawn here -->
+    </div>
+
+    <div class="content-section">
+      <h2>Theoretical Setup</h2>
+      <h3>Maps and Surfaces</h3>
+      <p>
+        A <strong>surface</strong> is a compact 2-dimensional manifold (possibly with border). A <strong>map</strong> <span class="math">M</span> partitions that surface into vertices <span class="math">V<sub>M</sub></span>, edges <span class="math">E<sub>M</sub></span>, and faces <span class="math">F<sub>M</sub></span>, satisfying:
+      </p>
+      <ul>
+        <li>each edge connects two distinct vertices,</li>
+        <li>each face is bounded by a simple cycle of vertices and edges,</li>
+        <li>edges on the border belong to only one face, interior edges to two.</li>
+      </ul>
+      <p>
+        A <strong>triangulation</strong> is a map whose every face is a triangle.
+      </p>
+      <p>
+        The <strong>Euler characteristic</strong>:
+      </p>
+      <div class="highlight">
+        <p class="math">χ<sub>M</sub> = |V<sub>M</sub>| − |E<sub>M</sub>| + |F<sub>M</sub>|</p>
+      </div>
+      <p>
+        captures the surface's topological type (e.g. <span class="math">χ = 2</span> for a sphere, <span class="math">1</span> for a disk, <span class="math">0</span> for a torus).
+      </p>
+    </div>
+
+    <div class="content-section">
+      <h2>The Algorithm</h2>
+      <h3>Overview</h3>
+      <p>
+        The algorithm takes as input any map <span class="math">M</span> (with polygonal faces of arbitrary degree) and outputs a 3-colored triangulation <span class="math">T</span> that subdivides <span class="math">M</span>.
+      </p>
+      <p>
+        The process works incrementally, handling one face at a time. The main invariant is that at any stage the already processed part <span class="math">T′</span> is a valid 3-colored sub-triangulation, while the remainder <span class="math">M′</span> is the unprocessed portion of the map.
+      </p>
+      <p>
+        The two meet along a <strong>front</strong>, the set of edges and vertices shared by both.
+      </p>
+      <p>
+        At each step, the algorithm selects a face <span class="math">m</span> adjacent to the front whose removal does not disconnect the underlying surface, colors its vertices, subdivides it into triangles, merges them into <span class="math">T′</span>, and updates the front.
+      </p>
+
+      <h3>The Triangulate Procedure</h3>
+      <div class="algorithm">
+        <p><strong>Formally:</strong></p>
+        <ol>
+          <li>Initialize <span class="math">M′ ← M</span>, <span class="math">T′ ← ∅</span>.</li>
+          <li>Pick any face <span class="math">m</span> and process it.</li>
+          <li>While the remaining dual graph <span class="math">M′*</span> has ≥2 vertices:
+            <ul>
+              <li>choose a face <span class="math">m</span> touching the front, whose removal keeps <span class="math">M′*</span> connected,</li>
+              <li>process it.</li>
+            </ul>
+          </li>
+          <li>Process the last remaining face, if any.</li>
+          <li>Output <span class="math">T = T′</span>.</li>
+        </ol>
+      </div>
+      <p>
+        Each <strong>Process(m, T′, M′)</strong> call:
+      </p>
+      <ol>
+        <li><strong>Colorize(m)</strong> — assign vertex colors ensuring local 3-coloring consistency.</li>
+        <li>Remove <span class="math">m</span> from <span class="math">M′</span>.</li>
+        <li><strong>Split(m)</strong> — subdivide <span class="math">m</span> into colored triangles.</li>
+        <li>Merge new triangles into <span class="math">T′</span>.</li>
+      </ol>
+
+      <h3>Colorize</h3>
+      <p>
+        The Colorize step ensures that the border of <span class="math">m</span> has a valid 3-color pattern before splitting.
+      </p>
+      <ul>
+        <li>If two front vertices of the same color are connected by an edge, subdivide the edge and assign the new midpoint a third color.</li>
+        <li>If any color is missing from the face's boundary, assign it to an uncolored vertex.</li>
+        <li>Assign remaining vertices colors consistent with neighboring ones.</li>
+      </ul>
+      <p>
+        After this, adjacent vertices along the border of <span class="math">m</span> all have distinct colors.
+      </p>
+
+      <h3>Split</h3>
+      <p>
+        Once the border of <span class="math">m</span> is properly colored, it can be subdivided.
+      </p>
+      <ul>
+        <li>If one color <span class="math">i</span> is missing on <span class="math">m</span>'s border, insert a new vertex inside <span class="math">m</span> of color <span class="math">i</span>, and connect it to all boundary vertices.</li>
+        <li>Otherwise, while all three colors appear at least twice, find a vertex with neighbors of the two other colors and connect those neighbors—forming a triangle and reducing <span class="math">m</span>'s polygonal size.</li>
+        <li>When exactly one vertex of some color remains, connect it to all nonadjacent vertices to complete triangulation.</li>
+      </ul>
+      <p>
+        This ensures every created triangle is 3-colored (colors 0, 1, 2 cyclically).
+      </p>
+
+      <h3>Selecting Faces</h3>
+      <p>
+        To maintain connectivity and efficiency, the algorithm uses the extended dual graph <span class="math">M′*</span>, where:
+      </p>
+      <ul>
+        <li>vertices correspond to faces of <span class="math">M′</span>,</li>
+        <li>edges correspond to shared edges between faces,</li>
+        <li>a special vertex <span class="math">m<sub>∅</sub></span> represents the external border.</li>
+      </ul>
+      <p>
+        At every step, the algorithm picks a face <span class="math">m</span> such that removing <span class="math">m</span> keeps <span class="math">M′*</span> connected. This guarantees that <span class="math">T′</span> remains a single connected region.
+      </p>
+      <p>
+        A practical implementation uses a priority queue of front-adjacent faces, preferring faces with simple front structures (connected front components).
+      </p>
+
+      <h3>Correctness</h3>
+      <p>
+        The algorithm preserves these invariants:
+      </p>
+      <ul>
+        <li><span class="math">T′</span> and <span class="math">M′</span> together always cover the original surface <span class="math">S<sub>M</sub></span>.</li>
+        <li>Their intersection (the front) consists only of shared edges and vertices.</li>
+        <li><span class="math">T′</span> remains connected.</li>
+        <li>Each vertex maintains a consistent 3-color assignment.</li>
+      </ul>
+      <p>
+        When all faces are processed, <span class="math">T′</span> forms a full 3-colored subdivision of <span class="math">M</span>.
+      </p>
+      <p>
+        Formal proofs (using properties of the extended dual graph) show that a valid face can always be chosen and that the process terminates after finitely many steps.
+      </p>
+    </div>
+
+    <div class="content-section">
+      <h2>Efficiency and Bounds</h2>
+      <h3>Upper Bounds on Triangles</h3>
+      <p>
+        If <span class="math">M</span> has <span class="math">e</span> edges, <span class="math">b</span> border edges, and Euler characteristic <span class="math">χ</span>, then the output triangulation <span class="math">T</span> satisfies:
+      </p>
+      <div class="highlight">
+        <p class="math">|F<sub>T</sub>| ≤ 2e − b + 2(2 − χ)</p>
+      </div>
+      <p>
+        In the special case where all faces have equal degree <span class="math">D</span>,
+      </p>
+      <div class="highlight">
+        <p class="math">|F<sub>T</sub>| ≤ (D − 1)|F<sub>M</sub>| + 4(2 − χ) − b</p>
+      </div>
+      <p>
+        which is markedly smaller than the barycentric subdivision bound <span class="math">4e − 2b</span>.
+      </p>
+
+      <h3>Lower Bound</h3>
+      <p>
+        For a triangulated input <span class="math">M</span>, if some interior vertices have odd degree, at least one extra triangle is needed for each such vertex:
+      </p>
+      <div class="highlight">
+        <p class="math">|F<sub>T</sub>| ≥ |F<sub>M</sub>| + |odd interior vertices|</p>
+      </div>
+
+      <h3>Time Complexity</h3>
+      <p>
+        The full algorithm runs in:
+      </p>
+      <div class="highlight">
+        <p class="math">O((3 − χ)|E<sub>M</sub>|)</p>
+      </div>
+      <p>
+        which is linear in the number of edges for any fixed surface topology.
+      </p>
+
+      <h3>Heuristic for Improved Efficiency</h3>
+      <p>
+        A heuristic improves practical performance by minimizing the number <span class="math">K</span> of faces whose vertices are already all colored (these tend to create extra vertices later).
+      </p>
+      <p>
+        Each candidate face <span class="math">m</span> in the queue is given priority:
+      </p>
+      <div class="highlight">
+        <p class="math">priority(m) = { D − U<sub>m</sub> if N<sub>m</sub> = 1; 1 otherwise }</p>
+      </div>
+      <p>
+        where <span class="math">U<sub>m</sub></span> is the number of uncolored vertices and <span class="math">D</span> is the maximum face degree.
+      </p>
+      <p>
+        Faces with smaller uncolored parts and simpler fronts are processed first, typically reducing total triangles dramatically without affecting asymptotic complexity.
+      </p>
+    </div>
+
+    <div class="content-section">
+      <h2>Experimental Results</h2>
+      <p>
+        Experiments were performed on random planar maps and surfaces:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Input type</th>
+            <th>Mean efficiency η</th>
+            <th>Observations</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Delaunay triangulations</td>
+            <td>~0.34</td>
+            <td>Output ~1.5× input faces</td>
+          </tr>
+          <tr>
+            <td>Voronoi diagrams (no heuristic)</td>
+            <td>~0.08</td>
+            <td>Output only ~3% above minimal</td>
+          </tr>
+          <tr>
+            <td>Voronoi diagrams (with heuristic)</td>
+            <td>&lt;0.001</td>
+            <td>Nearly optimal triangulation sizes</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The heuristic thus achieves near-minimal triangulations for non-triangular inputs.
+      </p>
+    </div>
+
+    <div class="conclusion">
+      <h2>Conclusion</h2>
+      <p>
+        The 3-color triangulation algorithm provides a powerful alternative to barycentric subdivision. It guarantees a valid 3-vertex-colorable triangulation on any surface while:
+      </p>
+      <ul>
+        <li>Reducing the number of triangles by roughly half or better,</li>
+        <li>Maintaining linear time complexity,</li>
+        <li>Producing output directly usable by the GEM structure.</li>
+      </ul>
+      <p>
+        This method balances theoretical rigor, topological correctness, and computational efficiency, offering a practical and elegant tool for geometric modeling, mesh generation, and manifold encoding.
+      </p>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.min.js"></script>
-    <script src="sketch.js"></script>
+    <script>
+      // sketch.js content embedded directly
+      function setup() {
+        const canvas = createCanvas(800, 400);
+        canvas.parent('sketch-container');
+        noLoop();
+      }
+
+      function draw() {
+        background(240);
+        
+        // Draw a simple 3-colored triangulation demonstration
+        stroke(0);
+        strokeWeight(1);
+        
+        // Define three colors for the vertices
+        const colors = [
+          color(255, 100, 100),  // Red
+          color(100, 255, 100),  // Green
+          color(100, 100, 255)   // Blue
+        ];
+        
+        // Create a triangulated pattern
+        for (let i = 0; i < 6; i++) {
+          for (let j = 0; j < 6; j++) {
+            const x = 100 + i * 120;
+            const y = 50 + j * 60;
+            
+            // Draw triangles with 3-colored vertices
+            drawColoredTriangle(x, y, colors);
+          }
+        }
+        
+        // Add explanatory text
+        fill(0);
+        noStroke();
+        textSize(14);
+        textAlign(CENTER);
+        text("Interactive 3-Colored Triangulation Visualization", width/2, 30);
+        textSize(12);
+        text("Each triangle uses all three colors (red, green, blue) at its vertices", width/2, height - 20);
+      }
+      
+      function drawColoredTriangle(baseX, baseY, colors) {
+        // Draw a triangle with each vertex having a different color
+        const size = 40;
+        
+        // Triangle vertices
+        const v1 = {x: baseX, y: baseY};
+        const v2 = {x: baseX + size, y: baseY};
+        const v3 = {x: baseX + size/2, y: baseY - size * 0.866};
+        
+        // Draw the triangle
+        stroke(0);
+        strokeWeight(1);
+        line(v1.x, v1.y, v2.x, v2.y);
+        line(v2.x, v2.y, v3.x, v3.y);
+        line(v3.x, v3.y, v1.x, v1.y);
+        
+        // Draw colored vertices
+        noStroke();
+        fill(colors[0]);
+        ellipse(v1.x, v1.y, 10, 10);
+        fill(colors[1]);
+        ellipse(v2.x, v2.y, 10, 10);
+        fill(colors[2]);
+        ellipse(v3.x, v3.y, 10, 10);
+      }
+      
+      // Add interactivity
+      function mousePressed() {
+        redraw();
+      }
+    </script>
   </body>
 </html>
