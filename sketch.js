@@ -107,20 +107,19 @@ class TriangulationHandler {
     return null;
   }
 
-  /* ---------- paper §3.4  (mini) ---------- */
   colorize(m) {
     let counts = [0, 0, 0];
     const faceIndex = this.faces.indexOf(m);
 
-    // 1️⃣ All edges incident to this face
+    // 1 All edges incident to this face
     const incidentEdges = this.edges.filter((e) => e.wings.includes(faceIndex));
 
-    // 2️⃣ Among those, find edges NOT in the front
+    // 2 Among those, find edges NOT in the front
     const notInFrontEdges = incidentEdges.filter(
       (e) => !this.front_edges.includes(e)
     );
 
-    // 3️⃣ From these, we’ll check if both vertices are in the front
+    // 3 From these, we'll check if both vertices are in the front
     const candidateEdges = notInFrontEdges.filter((e) => {
       const uInFront = this.front_vertices.includes(e.v1);
       const vInFront = this.front_vertices.includes(e.v2);
@@ -138,7 +137,7 @@ class TriangulationHandler {
       j++;
     }
 
-    // 3️⃣ Finally, color any remaining uncolored vertices so that adjacent vertices differ
+    // 3 Finally, color any remaining uncolored vertices so that adjacent vertices differ
     j = 0;
     while (j < m.verts.length) {
       const v = m.verts[j];
@@ -162,12 +161,6 @@ class TriangulationHandler {
       }
       j++;
     }
-
-    /*console.log("incidentEdges:", incidentEdges);
-    console.log("not in front edges:", notInFrontEdges);
-    console.log("candidates (both verts in front):", candidateEdges);
-
-    console.log("incidentEdges:", incidentEdges); */
   }
 
   split(m) {
@@ -205,21 +198,13 @@ class TriangulationHandler {
     this.colorize(m);
 
     const S = this.split(m); // new triangles
-    //this.facesTPrime.push(...S); // T′ ← T′ ∪ S
-    //this.facesPrime = this.facesPrime.filter((f) => f !== m); // M′ ← M′ − m
-    //this.facesTPrime.push(...S); // Add to triangulated structure
     this.facesPrime = this.facesPrime.filter((f) => f !== m); // Remove m from M′
-    //this.facesPrime = this.facesPrime.filter(f => f !== m);
-    //this.facesTPrime = this.facesTPrime.filter(f => f !== m);
 
     // Add new triangles to both
     this.facesPrime.push(...S);
     this.facesTPrime.push(...S);
 
     this.updateFront();
-    console.log("wat", S);
-    console.log("ook", this.front_edges);
-    console.log(this.front_vertices);
   }
 
   updateFront() {
@@ -237,44 +222,43 @@ class TriangulationHandler {
       vmap.set(v, vNew);
       return vNew;
     });
-    //console.log("VerticesPrime:", this.verticesPrime);
 
     this.edgesPrime = this.edges.map((e) => {
       const v1New = vmap.get(e.v1);
       const v2New = vmap.get(e.v2);
       const eNew = new Edge(v1New, v2New);
-      eNew.wings = [...e.wings]; // copy numeric indices or shallow data
+      eNew.wings = [...e.wings];
       return eNew;
     });
-    //console.log("EdgesPrime:", this.edgesPrime);
-    //console.log("edges:", this.edges);
 
     this.facesPrime = this.faces.map((f) => {
       const vertsNew = f.verts.map((v) => vmap.get(v));
       const fNew = new Face(vertsNew);
       return fNew;
     });
-    //console.log("FacesPrime:", this.facesPrime);
 
-    topo.process(this.facesPrime[0]);
+    this.process(this.facesPrime[0]);
 
     while (this.verticesPrime > 2) {}
   }
+
   /* ---------- draw original quads ---------- */
-  draw(xOffset, yOffset, gridW = 800, gridH = 400) {
+  draw(xOffset, yOffset, gridW, gridH) {
     push();
     translate(xOffset, yOffset);
     stroke(0);
+    strokeWeight(1.5);
     noFill();
 
     this.faces.forEach((f) => {
       beginShape();
       f.verts.forEach((v) =>
-        vertex(map(v.u, 0, 1, 0, gridW * 1.2), map(v.v, 0, 1, 0, gridH))
+        vertex(map(v.u, 0, 1, 0, gridW), map(v.v, 0, 1, 0, gridH))
       );
       endShape(CLOSE);
     });
 
+    // Draw u=0 and u=1 labels
     stroke("red");
     strokeWeight(2);
     let ymid = gridH / 2;
@@ -282,49 +266,57 @@ class TriangulationHandler {
     line(gridW, ymid, gridW + 10, ymid);
     noStroke();
     fill("red");
-    text("u=0", -40, ymid + 5);
-    text("u=1 (same points)", gridW + 15, ymid + 5);
+    textSize(12);
+    textAlign(CENTER, CENTER);
+    text("u=0", -25, ymid);
+    text("u=1", gridW + 25, ymid);
     pop();
   }
 
-  /* todo rename pas mprime */
-  drawMPrime(xOffset, yOffset, gridW = 800, gridH = 400) {
+  /* draw triangulated result */
+  drawMPrime(xOffset, yOffset, gridW, gridH) {
     push();
     translate(xOffset, yOffset);
     stroke(0);
+    strokeWeight(1.5);
     noFill();
-    /*this.faces.forEach((f) => {
-      // 6 quads
-      beginShape();
-      f.verts.forEach((v) =>
-        vertex(map(v.u, 0, 1, 0, gridW), map(v.v, 0, 1, 0, gridH))
-      );
-      endShape(CLOSE);
-    });*/
+    
+    // Draw triangulated faces
     this.facesTPrime.forEach((f) => {
       beginShape();
       f.verts.forEach((v) =>
-        vertex(map(v.u, 0, 1, 0, gridW * 1.2), map(v.v, 0, 1, 0, gridH))
+        vertex(map(v.u, 0, 1, 0, gridW), map(v.v, 0, 1, 0, gridH))
       );
       endShape(CLOSE);
     });
 
     /* vertex colour digits */
     noStroke();
-    fill(0, 0, 255);
+    fill(0, 0, 200);
     textAlign(CENTER, CENTER);
-    textSize(10);
+    textSize(11);
+    textStyle(BOLD);
     const drawn = new Set();
     this.facesPrime.forEach((f) =>
       f.verts.forEach((v) => {
         if (drawn.has(v)) return;
         drawn.add(v);
-        const x = map(v.u, 0, 1, 0, gridW * 1.2);
+        const x = map(v.u, 0, 1, 0, gridW);
         const y = map(v.v, 0, 1, 0, gridH);
-        text(v.color ?? "?", x, y - 4);
+        fill(this.getColorForValue(v.color));
+        text(v.color ?? "?", x, y);
       })
     );
     pop();
+  }
+
+  getColorForValue(color) {
+    const colors = [
+      [255, 0, 0],    // Red for 0
+      [0, 150, 0],    // Green for 1  
+      [0, 0, 255]     // Blue for 2
+    ];
+    return color !== null && color >= 0 && color < 3 ? colors[color] : [0, 0, 0];
   }
 }
 
@@ -333,30 +325,99 @@ class TriangulationHandler {
 ////////////////////////////////////////
 let topo;
 let showColoured = false;
+let canvas;
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  textSize(16);
+  // Get the container dimensions
+  const container = document.getElementById('sketch-container');
+  const containerWidth = container.offsetWidth - 40; // Account for padding
+  const containerHeight = 450;
+  
+  // Create canvas that fits the container
+  canvas = createCanvas(containerWidth, containerHeight);
+  canvas.parent('sketch-container');
+  
+  textSize(14);
   fill(0);
   topo = new TriangulationHandler(3, 2); // 3 cols × 2 rows  →  6 quads
-  const btn = createButton("Triangulate");
-  btn.position(30, 85);
-  btn.mousePressed(() => {
+  
+  // Setup button event listener
+  const triangulateBtn = document.getElementById('triangulate-btn');
+  triangulateBtn.addEventListener('click', () => {
     if (!showColoured) {
       topo.triangulate();
       showColoured = true;
+      triangulateBtn.disabled = true;
+      triangulateBtn.textContent = 'Triangulated';
+      triangulateBtn.style.background = '#27ae60';
     }
   });
 }
 
 function draw() {
-  background(235);
-  text("3-Coloured Triangulation  (wire-frame)", 30, 50);
-  text(`Quads: ${topo.faces.length}  (3×2 = 6 expected)`, 30, 70);
-  if (showColoured) topo.drawMPrime(100, 120);
-  else topo.draw(100, 120);
+  background(245);
+  
+  // Calculate drawing area with margins
+  const margin = 50;
+  const drawWidth = width - (margin * 2);
+  const drawHeight = height - (margin * 2) - 30;
+  const drawX = margin;
+  const drawY = margin + 20;
+  
+  // Draw title and info
+  fill(50);
+  textSize(16);
+  textStyle(BOLD);
+  text("3-Colored Triangulation Demo", 20, 25);
+  textSize(12);
+  textStyle(NORMAL);
+  
+  let statusText = showColoured ? 
+    `Triangulated: ${topo.facesTPrime.length} triangles` : 
+    `Original: ${topo.faces.length} quadrilaterals`;
+  text(statusText, 20, 45);
+  
+  // Draw the appropriate visualization
+  if (showColoured) {
+    topo.drawMPrime(drawX, drawY, drawWidth, drawHeight);
+    // Draw legend for colors
+    drawColorLegend(drawX + drawWidth - 120, drawY + drawHeight + 10);
+  } else {
+    topo.draw(drawX, drawY, drawWidth, drawHeight);
+  }
+  
+  // Draw boundary info
+  fill(100);
+  textSize(10);
+  text("Cylindrical mesh: left and right edges are identified", drawX, drawY + drawHeight + 25);
+}
+
+function drawColorLegend(x, y) {
+  push();
+  translate(x, y);
+  textSize(10);
+  textStyle(BOLD);
+  text("Vertex Colors:", 0, -5);
+  textStyle(NORMAL);
+  
+  const colors = [
+    { value: 0, color: [255, 0, 0], label: "Color 0" },
+    { value: 1, color: [0, 150, 0], label: "Color 1" },
+    { value: 2, color: [0, 0, 255], label: "Color 2" }
+  ];
+  
+  colors.forEach((item, i) => {
+    fill(item.color);
+    text(item.label, 25, i * 15);
+    fill(0);
+    text(item.value, 10, i * 15);
+  });
+  pop();
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  // Resize canvas when window is resized
+  const container = document.getElementById('sketch-container');
+  const containerWidth = container.offsetWidth - 40;
+  resizeCanvas(containerWidth, 450);
 }
