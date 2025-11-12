@@ -52,12 +52,12 @@ class TriangulationHandler {
     const cols = this.cols,
       rows = this.rows;
 
-    // 1️⃣ vertices
+    // vertices
     for (let i = 0; i <= rows; i++)
       for (let j = 0; j < cols; j++)
         this.vertices.push(new Vertex(j / cols, i / rows));
 
-    // 2️⃣ edges
+    // edges
     let edgeIndex = 0;
     // horizontal (wrap)
     for (let i = 0; i <= rows; i++) {
@@ -76,7 +76,7 @@ class TriangulationHandler {
       }
     }
 
-    // 3️⃣ faces  (quads)
+    // faces  (quads)
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
         const jp = (j + 1) % cols;
